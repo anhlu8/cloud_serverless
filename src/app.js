@@ -1,16 +1,19 @@
 'use strict';
-
-const AWS = require("aws-sdk");
+// Require packages:
+const AWS = require('aws-sdk');
 const mysql = require('mysql');
 
-const sqs = new AWS.SQS({
-    region: process.env.AWS_REGION
-});
+// Get environment variables:
 const awsAccountId = process.env.AWS_ACCOUNTID;
 const sqsQueueName = process.env.SQS_QUEUE_NAME;
-const queueUrl = `https://sqs.${process.env.AWS_REGION}.amazonaws.com/${awsAccountId}/${sqsQueueName}`;
+const awsRegion = process.env.AWS_REGION;
 const giphyAPI = process.env.GIPHY_API;
 
+// Confiq AWS SQS:
+const sqs = new AWS.SQS({region: awsRegion});
+const queueUrl = `https://sqs.${awsRegion}.amazonaws.com/${awsAccountId}/${sqsQueueName}`;
+
+// Config MySQL connection:
 const connection = mysql.createConnection({
     host: process.env.RDS_HOSTNAME,
     user: process.env.RDS_USERNAME,
@@ -19,7 +22,9 @@ const connection = mysql.createConnection({
     database: process.env.RDS_DATABASE
 });
 
-module.exports.sendMessagetoSQS =  async function(event, context, callback){
+// Lambda function to send message to SQS:
+module.exports.sendMessagetoSQS = async function (event, context, callback) {
+    // Fetching to get data from Giphy
     const response = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${giphyAPI}&q=cat&limit=25&offset=0&rating=G&lang=en`);
     const responseJSON = await response.json();
     const params = {
@@ -63,25 +68,23 @@ module.exports.sendMessagetoSQS =  async function(event, context, callback){
     })
 };
 
-module.export.receiveMessagefromSQS = async function(event, context, callback){
-
+// Lambda function to receive message from SQS and then connect to the MySQL database in AWS RDS
+module.export.receiveMessagefromSQS = async function (event, context, callback) {
     const params = {
         MessageBody: "this is message received",
         QueueUrl: queueUrl,
         MaxNumberOfMessages: 1,
     };
-
-    sqs.receiveMessage(params, function(err, data){
-        connection.connect(function(err){
-            if(err){
+    sqs.receiveMessage(params, function (err, data) {
+        connection.connect(function (err) {
+            if (err) {
                 console.error('Database connection failed:' + err.stack);
                 return;
             }
+            // Need to replace the console.log below with code to input GIPHY data into the database
             console.log('Connected to database');
         });
-
+        // This code below is to disconnect Lambda from the database
         context.callbackWaitsForEmptyEventLoop = false;
     })
-
-    
 };

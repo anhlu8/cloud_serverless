@@ -1,4 +1,5 @@
 service: redqueen
+
 provider:
   name: aws
   runtime: nodejs8.10
@@ -8,8 +9,10 @@ provider:
     Action:
       - sqs:*
     Resource: arn:aws:sqs:${env:AWS_REGION}:${env:AWS_ACCOUNTID}:${env:SQS_QUEUE_NAME}
+
 plugins:
   - serverless-dotenv-plugin
+
 functions:
   # hello:
   #   handler: src/handler.hello
@@ -18,23 +21,20 @@ functions:
   #   - http: 
   #       method: get
   #       path: hello
-  # cron:
-  #   handler: src/cron.default
-  #   events:
-  #     - schedule: rate(1 minute) 
-  # secondCron:
-  #   handler: src/secondCron.default
-  #   events:
-      # Invoke Lambda function every 2nd minute from Mon-Fri
-      # - schedule: cron(0/2 * ? * MON-FRI *)
-  worker:
-    handler: src/worker.sendMessagetoSQS
+
+  sendMessagetoSQS:
+    handler: src/app.sendMessagetoSQS
+    description: fetch & get data then send msg to SQS
     events:
       - schedule: rate(1 minute) 
       - sqs:
           arn: arn:aws:sqs:${env:AWS_REGION}:${env:AWS_ACCOUNTID}:${env:SQS_QUEUE_NAME}
           batchSize: 1
-    description: fetch & get data then send msg to SQS
+    
+  receiveMessagefromSQS:
+    handler: src/app.receiveMessagefromSQS
+    description: receive msg from SQS then connect to MYSQL
+    events:
 
 resources:
   Resources:
