@@ -2,12 +2,22 @@ service: redqueen
 provider:
   name: aws
   runtime: nodejs8.10
-  region: ${process.env.AWS_REGION}
+  environment: 
+    AWS_REGION : ${file(./serverless.env.yml):dev.AWS_REGION}
+    AWS_ACCOUNTID : ${file(./serverless.env.yml):dev.AWS_ACCOUNTID}
+    SQS_QUEUE_NAME : ${file(./serverless.env.yml):dev.SQS_QUEUE_NAME}
+    GIPHY_API : ${file(./serverless.env.yml):dev.GIPHY_API}
+    RDS_HOSTNAME : ${file(./serverless.env.yml):dev.RDS_HOSTNAME}
+    RDS_USERNAME : ${file(./serverless.env.yml):dev.RDS_USERNAME}
+    RDS_PASSWORD : ${file(./serverless.env.yml):dev.RDS_PASSWORD}
+    RDS_PORT : ${file(./serverless.env.yml):dev.RDS_PORT}
+    RDS_DATABASE : ${file(./serverless.env.yml):dev.RDS_DATABASE}
+  region: ${env:AWS_REGION}
   iamRoleStatements:
   - Effect: Allow
     Action:
       - sqs:*
-    Resource: arn:aws:sqs:${process.env.AWS_REGION}:${process.env.AWS_ACCOUNTID}:${process.env.SQS_QUEUE_NAME}
+    Resource: arn:aws:sqs:${env:AWS_REGION}:${env:AWS_ACCOUNTID}:${env:SQS_QUEUE_NAME}
 functions:
   # hello:
   #   handler: src/handler.hello
@@ -16,11 +26,10 @@ functions:
   #   - http: 
   #       method: get
   #       path: hello
-  cron:
-    handler: src/cron.default
-    events:
-      # Invoke Lambda function every minute
-      - schedule: rate(1 minute) 
+  # cron:
+  #   handler: src/cron.default
+  #   events:
+  #     - schedule: rate(1 minute) 
   # secondCron:
   #   handler: src/secondCron.default
   #   events:
@@ -29,13 +38,15 @@ functions:
   worker:
     handler: src/worker.sendMessagetoSQS
     events:
+      - schedule: rate(1 minute) 
       - sqs:
-          arn: arn:aws:sqs:${process.env.AWS_REGION}:${process.env.AWS_ACCOUNTID}:${process.env.SQS_QUEUE_NAME}
+          arn: arn:aws:sqs:${env:AWS_REGION}:${env:AWS_ACCOUNTID}:${env:SQS_QUEUE_NAME}
           batchSize: 1
-    description: worker fn consuming from sqs
+    description: fetch & get data then send msg to SQS
+
 resources:
   Resources:
     redqueen:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: ${process.env.SQS_QUEUE_NAME}
+        QueueName: ${env:SQS_QUEUE_NAME}
