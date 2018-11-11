@@ -1,0 +1,41 @@
+service: redqueen
+provider:
+  name: aws
+  runtime: nodejs8.10
+  region: ${process.env.AWS_REGION}
+  iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - sqs:*
+    Resource: arn:aws:sqs:${process.env.AWS_REGION}:${process.env.AWS_ACCOUNTID}:${process.env.SQS_QUEUE_NAME}
+functions:
+  # hello:
+  #   handler: src/handler.hello
+  #   events:
+  #   - schedule: ${self:custom.globalSchedule}
+  #   - http: 
+  #       method: get
+  #       path: hello
+  # cron:
+  #   handler: src/cron.default
+  #   events:
+      # Invoke Lambda function every minute
+      # - schedule: rate(1 minute) 
+  # secondCron:
+  #   handler: src/secondCron.default
+  #   events:
+      # Invoke Lambda function every 2nd minute from Mon-Fri
+      # - schedule: cron(0/2 * ? * MON-FRI *)
+  worker:
+    handler: src/worker.sendMessagetoSQS
+    events:
+      - sqs:
+          arn: arn:aws:sqs:${process.env.AWS_REGION}:${process.env.AWS_ACCOUNTID}:${process.env.SQS_QUEUE_NAME}
+          batchSize: 1
+    description: worker fn consuming from sqs
+resources:
+  Resources:
+    redqueen:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${process.env.SQS_QUEUE_NAME}
