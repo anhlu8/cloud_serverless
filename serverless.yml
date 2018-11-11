@@ -16,11 +16,11 @@ functions:
   #   - http: 
   #       method: get
   #       path: hello
-  # cron:
-  #   handler: src/cron.default
-  #   events:
+  cron:
+    handler: src/cron.default
+    events:
       # Invoke Lambda function every minute
-      # - schedule: rate(1 minute) 
+      - schedule: rate(1 minute) 
   # secondCron:
   #   handler: src/secondCron.default
   #   events:
